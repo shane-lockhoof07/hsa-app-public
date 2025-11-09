@@ -1,0 +1,109 @@
+# Environment variables
+.env
+.env.local
+.env.*.local
+.env.production
+
+# Personal configuration files
+k8s/hsa-postgres-secret.yaml
+docker-compose.yaml
+
+# Node.js / Frontend
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-debug.log*
+dist/
+dist-ssr/
+*.local
+
+# Go
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+/api-go/main
+vendor/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Receipts & Data (don't commit uploaded files)
+/data/
+*.jpg
+*.jpeg
+*.png
+*.pdf
+*.heic
+/receipts/
+
+# Logs
+*.log
+logs/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Coverage reports
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.pytest_cache/
+
+# Backup files
+*.bak
+*.backup
+*~
+backup-before-public-*/
+
+# Personal scripts
+complete-cleanup.sh

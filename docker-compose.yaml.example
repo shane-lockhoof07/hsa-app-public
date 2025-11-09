@@ -1,0 +1,112 @@
+version: "3.8"
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:14-alpine
+    container_name: hsa-postgres
+    environment:
+      POSTGRES_DB: hsa_app
+      POSTGRES_USER: hsa
+      POSTGRES_PASSWORD: CHANGE-THIS-PASSWORD
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db.sh:/docker-entrypoint-initdb.d/init-db.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hsa -d hsa_app"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - hsa-network
+
+  # OCR Service (Python FastAPI)
+  ocr-service:
+    build:
+      context: ./service-ocr
+      dockerfile: Dockerfile
+    container_name: hsa-ocr
+    environment:
+      PYTHONUNBUFFERED: "1"
+      USE_CLAUDE_API: "true"
+      CLAUDE_API_KEY: "${CLAUDE_API_KEY:-}"
+      CLAUDE_MODEL: "${CLAUDE_MODEL:-claude-3-5-haiku-20241022}"
+    ports:
+      - "8001:8000"
+    volumes:
+      # Mount hsa_receipts to the same location as api-go for file access
+      - hsa_receipts:/data/hsa
+    networks:
+      - hsa-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Go API Backend
+  api-go:
+    build:
+      context: ./api-go
+      dockerfile: Dockerfile
+    container_name: hsa-api
+    environment:
+      DATABASE_URL: "postgres://hsa:secret-hsa-password@postgres:5432/hsa_app?sslmode=disable"
+      OCR_SERVICE_URL: "http://ocr-service:8000"
+      HSA_DIR: "/data/hsa"
+      PORT: "8080"
+      CLAUDE_API_KEY: "${CLAUDE_API_KEY:-}"
+      CLAUDE_MODEL: "${CLAUDE_MODEL:-claude-3-5-haiku-20241022}"
+    ports:
+      - "8080:8080"
+    volumes:
+      # Mount hsa_receipts with new directory structure
+      - hsa_receipts:/data/hsa
+      # Mount migrations directory
+      - ./api-go/migrations:/app/migrations:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      ocr-service:
+        condition: service_started
+    networks:
+      - hsa-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Vue Frontend
+  frontend:
+    profiles: ["prod"]
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: hsa-frontend
+    environment:
+      # Frontend runs in browser, so it uses localhost from the user's machine
+      VITE_API_URL: "http://localhost:8080"
+    ports:
+      - "3000:80"
+    depends_on:
+      - api-go
+    networks:
+      - hsa-network
+
+volumes:
+  postgres_data:
+    driver: local
+  hsa_receipts:
+    driver: local
+    # If you want to use a specific local path instead of Docker volume:
+    # driver_opts:
+    #   type: none
+    #   o: bind
+    #   device: /path/to/your/hsa_receipts
+
+networks:
+  hsa-network:
+    driver: bridge

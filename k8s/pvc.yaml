@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: hsa-storage-pv
+spec:
+  capacity:
+    storage: 10Gi
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: local-path
+  hostPath:
+    path: /home/user/data/hsa_receipts
+    type: DirectoryOrCreate
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: hsa-storage
+  namespace: hsa-app
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 10Gi

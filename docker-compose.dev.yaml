@@ -1,0 +1,52 @@
+version: "3.8"
+
+# ============================================================
+# DEVELOPMENT DOCKER COMPOSE OVERRIDE
+# ============================================================
+# This file provides development-specific configuration
+# with hot-reload enabled for faster iteration.
+#
+# Usage:
+#   docker compose -f docker-compose.yaml -f docker-compose.dev.yaml up
+#
+# Features:
+#   - Frontend hot reload (Vite dev server)
+#   - Source code mounted as volumes
+#   - OCR service with auto-reload
+# ============================================================
+
+
+services:
+  # Frontend with hot reload
+  frontend:
+    profiles: ["dev"]
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: hsa-frontend-dev
+    environment:
+      VITE_API_URL: "http://localhost:8080/api"
+    ports:
+      - "3001:5173"  # Vite dev server runs on 5173
+    volumes:
+      # Mount source code for hot reload
+      - ./frontend:/app
+      - /app/node_modules
+    command: npm run dev -- --host 0.0.0.0
+
+  # API with source mounted (if you want hot reload for Go too)
+  api-go:
+    volumes:
+      # Keep existing volumes
+      - hsa_receipts:/data/hsa
+      - ./api-go/migrations:/app/migrations:ro
+      # Add source mounting if you want to rebuild on changes
+      # - ./api-go:/app:ro
+
+  # OCR service with source mounted
+  ocr-service:
+    volumes:
+      - hsa_receipts:/data/hsa
+      # Mount source for hot reload (FastAPI has --reload)
+      - ./service-ocr:/app:ro
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
